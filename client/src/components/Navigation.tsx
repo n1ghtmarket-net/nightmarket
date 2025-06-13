@@ -31,7 +31,7 @@ export function Navigation({ onAdminClick }: NavigationProps) {
                 Modules
               </Link>
               <Link href="/rental" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
-                Rental
+                Thuê ID/Tài Khoản
               </Link>
               <a href="#" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
                 Contact
@@ -67,7 +67,7 @@ export function Navigation({ onAdminClick }: NavigationProps) {
               Modules
             </Link>
             <Link href="/rental" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
-              Rental
+              Thuê ID/Tài Khoản
             </Link>
             <a href="#" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
               Contact
