@@ -67,7 +67,7 @@ const rentalServices: RentalService[] = [
 export default function Rental() {
   const handleContactClick = (service: RentalService) => {
     // You can customize this to open Discord or other contact methods
-    window.open("https://discord.com", "_blank");
+    window.open("https://discord.gg/WT9bUkVCTx", "_blank");
   };
 
   const featuredService = rentalServices.find(service => service.featured);
