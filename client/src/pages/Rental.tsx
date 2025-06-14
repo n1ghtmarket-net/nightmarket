@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, MessageCircle } from "lucide-react";
 import { SiApple, SiNetflix, SiSpotify, SiYoutube } from "react-icons/si";
+import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
+import { AdminPanel } from "@/components/AdminPanel";
 
 interface RentalService {
   id: string;
@@ -65,6 +69,8 @@ const rentalServices: RentalService[] = [
 ];
 
 export default function Rental() {
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
   const handleContactClick = (service: RentalService) => {
     // You can customize this to open Discord or other contact methods
     window.open("https://discord.gg/WT9bUkVCTx", "_blank");
@@ -74,7 +80,9 @@ export default function Rental() {
   const regularServices = rentalServices.filter(service => !service.featured);
 
   return (
-    <div className="min-h-screen night-primary pt-20 relative overflow-hidden">
+    <>
+      <Navigation onAdminClick={() => setIsAdminOpen(true)} />
+      <div className="min-h-screen night-primary pt-20 relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
@@ -338,6 +346,9 @@ export default function Rental() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      <Footer />
+      <AdminPanel isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />
+    </>
   );
 }
