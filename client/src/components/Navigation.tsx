@@ -28,25 +28,16 @@ export function Navigation({ onAdminClick }: NavigationProps) {
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-6">
               <Link href="/" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
-                Thuê ID/Tài Khoản
+                Trang chủ
               </Link>
-              <Link href="/modules" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
-                Modules <span className="free-badge">FREE</span>
+              <Link href="/rental" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
+                Thuê dịch vụ
               </Link>
               <Link href="/idfree" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
                 ID Free <span className="free-badge">FREE</span>
               </Link>
-              <a href="http://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
+              <a href="https://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
                 Phim Xuyên Đêm (PXD) <span className="free-badge">FREE</span>
-              </a>
-              <a href="/idfree" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
-                ID Apple Free
-              </a>
-              <a href="#contact" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
-                Liên Hệ
-              </a>
-              <a href="#support" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
-                Hỗ Trợ
               </a>
               <Button 
                 onClick={onAdminClick}
@@ -76,22 +67,16 @@ export function Navigation({ onAdminClick }: NavigationProps) {
         <div className="md:hidden backdrop-blur-md bg-black/40 border-t border-purple-500/20">
           <div className="px-4 pt-4 pb-6 space-y-3">
             <Link href="/" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
-              Thuê ID/Tài Khoản
+              Trang chủ
             </Link>
-            <Link href="/modules" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
-              Modules <span className="free-badge">FREE</span>
+            <Link href="/rental" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
+              Thuê dịch vụ
             </Link>
-            <a href="http://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
+            <Link href="/idfree" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
+              ID Free <span className="free-badge">FREE</span>
+            </Link>
+            <a href="https://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
               Phim Xuyên Đêm (PXD) <span className="free-badge">FREE</span>
-            </a>
-            <a href="#contact" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
-              Liên Hệ
-            </a>
-            <a href="/idfree" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
-              Id Apple Free
-            </a>
-            <a href="#support" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
-              Hỗ Trợ
             </a>
             <Button 
               onClick={onAdminClick}
