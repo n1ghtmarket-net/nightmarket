@@ -1,4 +1,4 @@
-import { users, urls, siteSettings, type User, type InsertUser, type Url, type InsertUrl, type SiteSettings, type InsertSiteSettings } from "@shared/schema";
+import { users, urls, siteSettings, type User, type InsertUser, type Url, type InsertUrl, type SiteSettings, type InsertSiteSettings, type AppleIdAccess, type InsertAppleIdAccess } from "@shared/schema";
 
 export interface IStorage {
   // User methods
@@ -20,18 +20,28 @@ export interface IStorage {
   // Rental Services Methods
   getAllRentalServices(): Promise<any[]>;
   updateRentalService(id: string, service: any): Promise<any>;
+
+  // Apple ID Access Methods
+  getAllAppleIdAccess(): Promise<AppleIdAccess[]>;
+  getAppleIdByKey(accessKey: string): Promise<AppleIdAccess | undefined>;
+  createAppleIdAccess(access: InsertAppleIdAccess): Promise<AppleIdAccess>;
+  updateAppleIdAccess(id: string, access: Partial<InsertAppleIdAccess>): Promise<AppleIdAccess | undefined>;
+  deleteAppleIdAccess(id: string): Promise<boolean>;
+  markAppleIdAsUsed(accessKey: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private urls: Map<number, Url>;
   private siteSettings: SiteSettings;
+  private appleIdAccess: Map<string, AppleIdAccess>;
   private currentUserId: number;
   private currentUrlId: number;
 
   constructor() {
     this.users = new Map();
     this.urls = new Map();
+    this.appleIdAccess = new Map();
     this.currentUserId = 1;
     this.currentUrlId = 1;
 
@@ -39,9 +49,12 @@ export class MemStorage implements IStorage {
     this.users.set(1, {
       id: 1,
       username: "admin",
-      password: "nightmarket2024"
+      password: "adminnightmarket"
     });
     this.currentUserId = 2;
+
+    // Initialize Apple ID access keys
+    this.initializeAppleIdData();
 
     // Initialize default modules
     this.urls.set(1, {
@@ -94,7 +107,7 @@ export class MemStorage implements IStorage {
 
     this.urls.set(5, {
       id: 5,
-      name: "Locket Widget",
+      name: "Locket gold",
       address: "https://raw.githubusercontent.com/NightmarketServer/Locket/refs/heads/main/locket.module",
       description: "Widget chia sẻ ảnh với bạn bè",
       icon: "fas fa-heart",
@@ -243,6 +256,77 @@ export class MemStorage implements IStorage {
     // For now, just return the updated service
     // In a real implementation, this would update a database
     return { id, ...service };
+  }
+
+  private initializeAppleIdData() {
+    // Sample Apple ID access keys
+    const sampleAccess: AppleIdAccess[] = [
+      {
+        id: "1",
+        accessKey: "DEMO2024",
+        appleId: "demo@icloud.com",
+        applePassword: "DemoPass123",
+        isActive: true,
+        isUsed: false,
+        createdAt: new Date(),
+      },
+      {
+        id: "2", 
+        accessKey: "FREE2024",
+        appleId: "free@icloud.com",
+        applePassword: "FreePass456",
+        isActive: true,
+        isUsed: false,
+        createdAt: new Date(),
+      }
+    ];
+
+    sampleAccess.forEach(access => {
+      this.appleIdAccess.set(access.id, access);
+    });
+  }
+
+  async getAllAppleIdAccess(): Promise<AppleIdAccess[]> {
+    return Array.from(this.appleIdAccess.values());
+  }
+
+  async getAppleIdByKey(accessKey: string): Promise<AppleIdAccess | undefined> {
+    return Array.from(this.appleIdAccess.values()).find(access => 
+      access.accessKey === accessKey && access.isActive && !access.isUsed
+    );
+  }
+
+  async createAppleIdAccess(insertAccess: InsertAppleIdAccess): Promise<AppleIdAccess> {
+    const id = Date.now().toString();
+    const access: AppleIdAccess = {
+      ...insertAccess,
+      id,
+      createdAt: new Date(),
+    };
+    this.appleIdAccess.set(id, access);
+    return access;
+  }
+
+  async updateAppleIdAccess(id: string, updateData: Partial<InsertAppleIdAccess>): Promise<AppleIdAccess | undefined> {
+    const existingAccess = this.appleIdAccess.get(id);
+    if (!existingAccess) return undefined;
+
+    const updatedAccess: AppleIdAccess = { ...existingAccess, ...updateData };
+    this.appleIdAccess.set(id, updatedAccess);
+    return updatedAccess;
+  }
+
+  async deleteAppleIdAccess(id: string): Promise<boolean> {
+    return this.appleIdAccess.delete(id);
+  }
+
+  async markAppleIdAsUsed(accessKey: string): Promise<void> {
+    const access = Array.from(this.appleIdAccess.values()).find(a => a.accessKey === accessKey);
+    if (access) {
+      access.isUsed = true;
+      access.usedAt = new Date();
+      this.appleIdAccess.set(access.id, access);
+    }
   }
 }
 

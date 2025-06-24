@@ -72,3 +72,20 @@ export const insertRentalServiceSchema = rentalServiceSchema.omit({ id: true });
 
 export type RentalService = z.infer<typeof rentalServiceSchema>;
 export type InsertRentalService = z.infer<typeof insertRentalServiceSchema>;
+
+// Apple ID Access Schema
+export const appleIdAccessSchema = z.object({
+  id: z.string(),
+  accessKey: z.string(),
+  appleId: z.string(),
+  applePassword: z.string(),
+  isActive: z.boolean().default(true),
+  isUsed: z.boolean().default(false),
+  createdAt: z.date().default(() => new Date()),
+  usedAt: z.date().optional(),
+});
+
+export const insertAppleIdAccessSchema = appleIdAccessSchema.omit({ id: true, createdAt: true });
+
+export type AppleIdAccess = z.infer<typeof appleIdAccessSchema>;
+export type InsertAppleIdAccess = z.infer<typeof insertAppleIdAccessSchema>;

@@ -131,6 +131,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Apple ID Access endpoints
+  app.post("/api/apple-id/verify-key", async (req, res) => {
+    try {
+      const { accessKey } = req.body;
+      
+      if (!accessKey) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Key truy cập là bắt buộc" 
+        });
+      }
+      
+      const appleIdAccess = await storage.getAppleIdByKey(accessKey);
+      if (!appleIdAccess) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Key không hợp lệ, đã được sử dụng hoặc đã hết hạn" 
+        });
+      }
+      
+      // Mark as used (optional - for tracking)
+      await storage.markAppleIdAsUsed(accessKey);
+      
+      res.json({ 
+        success: true, 
+        message: "Key hợp lệ",
+        data: {
+          appleId: appleIdAccess.appleId,
+          applePassword: appleIdAccess.applePassword
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Đã xảy ra lỗi server" 
+      });
+    }
+  });
+
+  // Admin endpoints for managing Apple ID access
+  app.get("/api/admin/apple-id-access", async (req, res) => {
+    try {
+      const allAccess = await storage.getAllAppleIdAccess();
+      res.json(allAccess);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Apple ID access data" });
+    }
+  });
+
+  app.post("/api/admin/apple-id-access", async (req, res) => {
+    try {
+      const { accessKey, appleId, applePassword, isActive } = req.body;
+      
+      if (!accessKey || !appleId || !applePassword) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Check if key already exists
+      const existingAccess = Array.from((await storage.getAllAppleIdAccess())).find(
+        access => access.accessKey === accessKey
+      );
+      
+      if (existingAccess) {
+        return res.status(400).json({ message: "Key đã tồn tại" });
+      }
+      
+      const newAccess = await storage.createAppleIdAccess({
+        accessKey,
+        appleId,
+        applePassword,
+        isActive: isActive ?? true,
+        isUsed: false
+      });
+      
+      res.status(201).json(newAccess);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create Apple ID access" });
+    }
+  });
+
+  // Generate random key endpoint
+  app.post("/api/admin/apple-id-access/generate-key", async (req, res) => {
+    try {
+      const { appleId, applePassword } = req.body;
+      
+      if (!appleId || !applePassword) {
+        return res.status(400).json({ message: "Apple ID và mật khẩu là bắt buộc" });
+      }
+      
+      // Generate random key
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let accessKey = '';
+      for (let i = 0; i < 8; i++) {
+        accessKey += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      
+      // Ensure key is unique
+      let isUnique = false;
+      let attempts = 0;
+      while (!isUnique && attempts < 10) {
+        const existingAccess = Array.from((await storage.getAllAppleIdAccess())).find(
+          access => access.accessKey === accessKey
+        );
+        
+        if (!existingAccess) {
+          isUnique = true;
+        } else {
+          accessKey = '';
+          for (let i = 0; i < 8; i++) {
+            accessKey += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+          attempts++;
+        }
+      }
+      
+      if (!isUnique) {
+        return res.status(500).json({ message: "Không thể tạo key duy nhất" });
+      }
+      
+      const newAccess = await storage.createAppleIdAccess({
+        accessKey,
+        appleId,
+        applePassword,
+        isActive: true,
+        isUsed: false
+      });
+      
+      res.status(201).json(newAccess);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate Apple ID access key" });
+    }
+  });
+
+  app.put("/api/admin/apple-id-access/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const updatedAccess = await storage.updateAppleIdAccess(id, updateData);
+      if (!updatedAccess) {
+        return res.status(404).json({ message: "Apple ID access not found" });
+      }
+      
+      res.json(updatedAccess);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update Apple ID access" });
+    }
+  });
+
+  app.delete("/api/admin/apple-id-access/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteAppleIdAccess(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Apple ID access not found" });
+      }
+      
+      res.json({ message: "Apple ID access deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete Apple ID access" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

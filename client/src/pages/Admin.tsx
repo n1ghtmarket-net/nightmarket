@@ -29,7 +29,7 @@ import {
   ShoppingCart,
   Package
 } from "lucide-react";
-import type { Url, SiteSettings } from "@shared/schema";
+import type { Url, SiteSettings, AppleIdAccess } from "@shared/schema";
 
 interface RentalService {
   id: string;
@@ -50,6 +50,7 @@ export default function Admin() {
   const [urlForm, setUrlForm] = useState({ name: "", address: "", description: "" });
   const [editingUrl, setEditingUrl] = useState<Url | null>(null);
   const [editingService, setEditingService] = useState<RentalService | null>(null);
+  const [appleIdForm, setAppleIdForm] = useState({ appleId: "", applePassword: "" });
   const [isLoading, setIsLoading] = useState(false);
   
   const { toast } = useToast();
@@ -76,6 +77,11 @@ export default function Admin() {
 
   const { data: rentalServices = [], refetch: refetchRentalServices } = useQuery({
     queryKey: ["/api/rental-services"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: appleIdAccess = [], refetch: refetchAppleIdAccess } = useQuery({
+    queryKey: ["/api/admin/apple-id-access"],
     enabled: isAuthenticated,
   });
 
@@ -171,6 +177,49 @@ export default function Admin() {
     },
   });
 
+  const generateAppleIdKeyMutation = useMutation({
+    mutationFn: async (data: { appleId: string; applePassword: string }) => {
+      const response = await apiRequest("POST", "/api/admin/apple-id-access/generate-key", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Thành công",
+        description: `Key mới đã được tạo: ${data.accessKey}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/apple-id-access"] });
+      setAppleIdForm({ appleId: "", applePassword: "" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể tạo key mới",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAppleIdAccessMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/admin/apple-id-access/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Thành công",
+        description: "Key đã được xóa",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/apple-id-access"] });
+    },
+    onError: () => {
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa key",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -208,6 +257,25 @@ export default function Admin() {
     e.preventDefault();
     if (!editingService) return;
     await updateRentalServiceMutation.mutateAsync(editingService);
+  };
+
+  const handleGenerateAppleIdKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appleIdForm.appleId || !appleIdForm.applePassword) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập đầy đủ thông tin Apple ID",
+        variant: "destructive",
+      });
+      return;
+    }
+    await generateAppleIdKeyMutation.mutateAsync(appleIdForm);
+  };
+
+  const handleDeleteAppleIdAccess = async (id: string) => {
+    if (confirm("Bạn có chắc chắn muốn xóa key này?")) {
+      await deleteAppleIdAccessMutation.mutateAsync(id);
+    }
   };
 
   const handleLogout = () => {
@@ -310,10 +378,14 @@ export default function Admin() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="modules" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3 night-secondary">
+          <TabsList className="grid w-full grid-cols-4 night-secondary">
             <TabsTrigger value="modules" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
               Quản lý Module
+            </TabsTrigger>
+            <TabsTrigger value="appleid" className="flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              ID Free Keys
             </TabsTrigger>
             <TabsTrigger value="rental" className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" />
@@ -453,6 +525,111 @@ export default function Admin() {
                               </div>
                             </>
                           )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Apple ID Management Tab */}
+          <TabsContent value="appleid" className="space-y-8">
+            <Card className="night-secondary night-border">
+              <CardHeader>
+                <CardTitle className="night-text flex items-center">
+                  <UserPlus className="w-5 h-5 mr-2" style={{ color: 'var(--night-accent)' }} />
+                  Quản lý ID Free Keys
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Create New Apple ID Key */}
+                <div className="night-bg p-4 rounded-lg night-border border">
+                  <h4 className="font-medium night-text mb-3">Tạo Key mới</h4>
+                  <form onSubmit={handleGenerateAppleIdKey} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-400">Apple ID</Label>
+                        <Input
+                          type="email"
+                          value={appleIdForm.appleId}
+                          onChange={(e) => setAppleIdForm({ ...appleIdForm, appleId: e.target.value })}
+                          className="night-secondary night-border night-text"
+                          placeholder="example@icloud.com"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-400">Mật khẩu</Label>
+                        <Input
+                          type="password"
+                          value={appleIdForm.applePassword}
+                          onChange={(e) => setAppleIdForm({ ...appleIdForm, applePassword: e.target.value })}
+                          className="night-secondary night-border night-text"
+                          placeholder="Mật khẩu Apple ID"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={generateAppleIdKeyMutation.isPending}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {generateAppleIdKeyMutation.isPending ? "Đang tạo..." : "Tạo Key mới"}
+                    </Button>
+                  </form>
+                </div>
+                
+                {/* Apple ID Keys List */}
+                <div className="space-y-3">
+                  <h4 className="font-medium night-text">Danh sách Keys</h4>
+                  <div className="space-y-2">
+                    {appleIdAccess.length === 0 ? (
+                      <div className="text-center py-8 text-slate-400">
+                        Chưa có key nào. Tạo key đầu tiên ở trên.
+                      </div>
+                    ) : (
+                      appleIdAccess.map((access: AppleIdAccess) => (
+                        <div key={access.id} className="flex items-center justify-between p-3 night-bg rounded night-border border">
+                          <div className="flex-1 flex items-center gap-3">
+                            <UserPlus className="w-5 h-5" style={{ color: 'var(--night-accent)' }} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-mono text-sm night-text bg-slate-800 px-2 py-1 rounded">
+                                  {access.accessKey}
+                                </span>
+                                {access.isUsed ? (
+                                  <span className="text-xs bg-red-600 text-white px-2 py-1 rounded">Đã sử dụng</span>
+                                ) : (
+                                  <span className="text-xs bg-green-600 text-white px-2 py-1 rounded">Có sẵn</span>
+                                )}
+                              </div>
+                              <div className="text-sm text-slate-400">
+                                {access.appleId} • Tạo: {new Date(access.createdAt).toLocaleDateString('vi-VN')}
+                                {access.usedAt && ` • Dùng: ${new Date(access.usedAt).toLocaleDateString('vi-VN')}`}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => navigator.clipboard.writeText(access.accessKey)}
+                              className="night-border text-slate-400 hover:text-white"
+                              title="Sao chép key"
+                            >
+                              Copy
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              onClick={() => handleDeleteAppleIdAccess(access.id)}
+                              disabled={deleteAppleIdAccessMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))
                     )}
