@@ -74,7 +74,7 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
     onError: () => {
       toast({ 
         title: "Login failed", 
-        description: "Invalid credentials. Try: admin / nightmarket2024",
+        description: "Invalid credentials.",
         variant: "destructive"
       });
     },
