@@ -49,7 +49,7 @@ export class MemStorage implements IStorage {
     this.users.set(1, {
       id: 1,
       username: "admin",
-      password: "adminnightmarket"
+      password: "Camtien2002@"
     });
     this.currentUserId = 2;
 
