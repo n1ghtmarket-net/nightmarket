@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -68,6 +67,8 @@ export default function Admin() {
   const { data: urls = [], refetch: refetchUrls } = useQuery({
     queryKey: ["/api/urls"],
     enabled: isAuthenticated,
+    staleTime: 0, // Always refetch to ensure fresh data
+    gcTime: 0, // Don't cache for long to prevent stale data issues
   });
 
   const { data: settings, refetch: refetchSettings } = useQuery({
@@ -125,13 +126,31 @@ export default function Admin() {
       const response = await apiRequest("PUT", `/api/urls/${id}`, url);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/urls"] });
+    onSuccess: async (updatedUrl) => {
+      // Force immediate cache update with optimistic data
+      queryClient.setQueryData(["/api/urls"], (oldData: any) => {
+        if (!oldData) return [updatedUrl];
+        return oldData.map((url: any) => 
+          url.id === updatedUrl.id ? { ...url, ...updatedUrl } : url
+        );
+      });
+      
+      // Clear editing state immediately to prevent form state issues
       setEditingUrl(null);
-      toast({ title: "Cập nhật URL thành công" });
+      
+      // Force a complete cache refresh
+      await queryClient.refetchQueries({ queryKey: ["/api/urls"] });
+      
+      toast({ title: "Cập nhật module thành công" });
     },
-    onError: () => {
-      toast({ title: "Cập nhật URL thất bại", variant: "destructive" });
+    onError: (error: any) => {
+      // Reset editing state on error to show current data
+      setEditingUrl(null);
+      toast({ 
+        title: "Cập nhật module thất bại", 
+        description: error.message || "Vui lòng thử lại",
+        variant: "destructive" 
+      });
     },
   });
 
@@ -239,12 +258,27 @@ export default function Admin() {
   const handleUpdateUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUrl) return;
-    await updateUrlMutation.mutateAsync({
-      id: editingUrl.id,
-      name: editingUrl.name,
-      address: editingUrl.address,
-      description: editingUrl.description || "",
-    });
+    
+    // Validate inputs
+    if (!editingUrl.name.trim() || !editingUrl.address.trim()) {
+      toast({ 
+        title: "Lỗi", 
+        description: "Tên module và link không được để trống",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    try {
+      await updateUrlMutation.mutateAsync({
+        id: editingUrl.id,
+        name: editingUrl.name.trim(),
+        address: editingUrl.address.trim(),
+        description: editingUrl.description?.trim() || "",
+      });
+    } catch (error) {
+      console.error('Update failed:', error);
+    }
   };
 
   const handleDeleteUrl = async (id: number) => {
@@ -479,15 +513,31 @@ export default function Admin() {
                                 />
                               </div>
                               <div className="flex gap-2">
-                                <Button type="submit" size="sm" className="bg-green-600 hover:bg-green-700">
-                                  <Save className="w-4 h-4" />
+                                <Button 
+                                  type="submit" 
+                                  size="sm" 
+                                  className="bg-green-600 hover:bg-green-700"
+                                  disabled={updateUrlMutation.isPending}
+                                >
+                                  {updateUrlMutation.isPending ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <Save className="w-4 h-4" />
+                                  )}
                                 </Button>
                                 <Button 
                                   type="button" 
                                   size="sm" 
                                   variant="outline" 
-                                  onClick={() => setEditingUrl(null)}
+                                  onClick={() => {
+                                    // Reset editing state to original data
+                                    const originalUrl = urls.find(u => u.id === editingUrl?.id);
+                                    if (originalUrl) {
+                                      setEditingUrl(null);
+                                    }
+                                  }}
                                   className="night-border"
+                                  disabled={updateUrlMutation.isPending}
                                 >
                                   Hủy
                                 </Button>
@@ -509,8 +559,9 @@ export default function Admin() {
                                 <Button 
                                   size="sm" 
                                   variant="ghost"
-                                  onClick={() => setEditingUrl(url)}
+                                  onClick={() => setEditingUrl({ ...url })}
                                   className="text-blue-400 hover:text-blue-300"
+                                  disabled={updateUrlMutation.isPending}
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
