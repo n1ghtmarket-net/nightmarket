@@ -49,7 +49,7 @@ export class MemStorage implements IStorage {
     this.users.set(1, {
       id: 1,
       username: "admin",
-      password: "Camtien2002@"
+      password: "adminnightmarket"
     });
     this.currentUserId = 2;
 
@@ -176,8 +176,21 @@ export class MemStorage implements IStorage {
       return undefined;
     }
 
-    const updatedUrl: Url = { ...existingUrl, ...updateData };
+    // Ensure we preserve all required fields and update only what's provided
+    const updatedUrl: Url = { 
+      ...existingUrl, 
+      ...updateData,
+      // Ensure fields are properly trimmed and validated
+      name: updateData.name?.trim() || existingUrl.name,
+      address: updateData.address?.trim() || existingUrl.address,
+      description: updateData.description?.trim() || existingUrl.description
+    };
+    
     this.urls.set(id, updatedUrl);
+    
+    // Log the update for debugging
+    console.log('Updated URL:', { id, before: existingUrl, after: updatedUrl });
+    
     return updatedUrl;
   }
 
