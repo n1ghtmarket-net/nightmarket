@@ -75,6 +75,9 @@ export function Navigation({ onAdminClick }: NavigationProps) {
             <Link href="/rental" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
               Thuê dịch vụ
             </Link>
+            <Link href="/modules" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
+              Modules <span className="free-badge">FREE</span>
+            </Link>
             <Link href="/idfree" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
               ID Free <span className="free-badge">FREE</span>
             </Link>
