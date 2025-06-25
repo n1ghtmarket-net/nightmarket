@@ -100,7 +100,7 @@ export default function Admin() {
     onError: () => {
       toast({ 
         title: "Đăng nhập thất bại", 
-        description: "Thông tin đăng nhập không đúng. Thử: admin / nightmarket2024",
+        description: "Thông tin đăng nhập không đúng.",
         variant: "destructive"
       });
     },
