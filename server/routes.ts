@@ -266,8 +266,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/admin/apple-id-access/:id", async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = parseInt(req.params.id);
       const updateData = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
       
       const updatedAccess = await storage.updateAppleIdAccess(id, updateData);
       if (!updatedAccess) {
@@ -282,7 +286,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/apple-id-access/:id", async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
       const deleted = await storage.deleteAppleIdAccess(id);
       
       if (!deleted) {
