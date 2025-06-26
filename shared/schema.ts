@@ -73,19 +73,28 @@ export const insertRentalServiceSchema = rentalServiceSchema.omit({ id: true });
 export type RentalService = z.infer<typeof rentalServiceSchema>;
 export type InsertRentalService = z.infer<typeof insertRentalServiceSchema>;
 
-// Apple ID Access Schema
-export const appleIdAccessSchema = z.object({
-  id: z.string(),
-  accessKey: z.string(),
-  appleId: z.string(),
-  applePassword: z.string(),
-  isActive: z.boolean().default(true),
-  isUsed: z.boolean().default(false),
-  createdAt: z.date().default(() => new Date()),
-  usedAt: z.date().optional(),
+// Apple ID Access table for database
+export const appleIdAccess = pgTable("apple_id_access", {
+  id: serial("id").primaryKey(),
+  accessKey: text("access_key").notNull().unique(),
+  appleId: text("apple_id").notNull(),
+  applePassword: text("apple_password").notNull(),
+  isActive: boolean("is_active").default(true),
+  isUsed: boolean("is_used").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  usedAt: timestamp("used_at"),
 });
 
-export const insertAppleIdAccessSchema = appleIdAccessSchema.omit({ id: true, createdAt: true });
+// Insert schemas
+export const insertAppleIdAccessSchema = createInsertSchema(appleIdAccess).pick({
+  accessKey: true,
+  appleId: true,
+  applePassword: true,
+  isActive: true,
+  isUsed: true,
+  usedAt: true,
+});
 
-export type AppleIdAccess = z.infer<typeof appleIdAccessSchema>;
+// Types
+export type AppleIdAccess = typeof appleIdAccess.$inferSelect;
 export type InsertAppleIdAccess = z.infer<typeof insertAppleIdAccessSchema>;
