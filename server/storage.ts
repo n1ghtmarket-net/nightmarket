@@ -1,4 +1,6 @@
-import { users, urls, siteSettings, type User, type InsertUser, type Url, type InsertUrl, type SiteSettings, type InsertSiteSettings, type AppleIdAccess, type InsertAppleIdAccess } from "@shared/schema";
+import { users, urls, siteSettings, appleIdAccess, type User, type InsertUser, type Url, type InsertUrl, type SiteSettings, type InsertSiteSettings, type AppleIdAccess, type InsertAppleIdAccess } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -25,8 +27,8 @@ export interface IStorage {
   getAllAppleIdAccess(): Promise<AppleIdAccess[]>;
   getAppleIdByKey(accessKey: string): Promise<AppleIdAccess | undefined>;
   createAppleIdAccess(access: InsertAppleIdAccess): Promise<AppleIdAccess>;
-  updateAppleIdAccess(id: string, access: Partial<InsertAppleIdAccess>): Promise<AppleIdAccess | undefined>;
-  deleteAppleIdAccess(id: string): Promise<boolean>;
+  updateAppleIdAccess(id: number, access: Partial<InsertAppleIdAccess>): Promise<AppleIdAccess | undefined>;
+  deleteAppleIdAccess(id: number): Promise<boolean>;
   markAppleIdAsUsed(accessKey: string): Promise<void>;
 }
 
@@ -34,7 +36,7 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private urls: Map<number, Url>;
   private siteSettings: SiteSettings;
-  private appleIdAccess: Map<string, AppleIdAccess>;
+  private appleIdAccess: Map<number, AppleIdAccess>;
   private currentUserId: number;
   private currentUrlId: number;
 
@@ -275,22 +277,24 @@ export class MemStorage implements IStorage {
     // Sample Apple ID access keys
     const sampleAccess: AppleIdAccess[] = [
       {
-        id: "1",
+        id: 1,
         accessKey: "DEMO2024",
         appleId: "demo@icloud.com",
         applePassword: "DemoPass123",
         isActive: true,
         isUsed: false,
         createdAt: new Date(),
+        usedAt: null,
       },
       {
-        id: "2", 
+        id: 2, 
         accessKey: "FREE2024",
         appleId: "free@icloud.com",
         applePassword: "FreePass456",
         isActive: true,
         isUsed: false,
         createdAt: new Date(),
+        usedAt: null,
       }
     ];
 
@@ -310,17 +314,22 @@ export class MemStorage implements IStorage {
   }
 
   async createAppleIdAccess(insertAccess: InsertAppleIdAccess): Promise<AppleIdAccess> {
-    const id = Date.now().toString();
+    const id = Date.now();
     const access: AppleIdAccess = {
-      ...insertAccess,
       id,
+      accessKey: insertAccess.accessKey,
+      appleId: insertAccess.appleId,
+      applePassword: insertAccess.applePassword,
+      isActive: insertAccess.isActive ?? true,
+      isUsed: insertAccess.isUsed ?? false,
       createdAt: new Date(),
+      usedAt: insertAccess.usedAt || null,
     };
     this.appleIdAccess.set(id, access);
     return access;
   }
 
-  async updateAppleIdAccess(id: string, updateData: Partial<InsertAppleIdAccess>): Promise<AppleIdAccess | undefined> {
+  async updateAppleIdAccess(id: number, updateData: Partial<InsertAppleIdAccess>): Promise<AppleIdAccess | undefined> {
     const existingAccess = this.appleIdAccess.get(id);
     if (!existingAccess) return undefined;
 
@@ -329,7 +338,7 @@ export class MemStorage implements IStorage {
     return updatedAccess;
   }
 
-  async deleteAppleIdAccess(id: string): Promise<boolean> {
+  async deleteAppleIdAccess(id: number): Promise<boolean> {
     return this.appleIdAccess.delete(id);
   }
 
@@ -343,4 +352,137 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// DatabaseStorage implementation using PostgreSQL
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async getAllUrls(): Promise<Url[]> {
+    return await db.select().from(urls);
+  }
+
+  async getUrl(id: number): Promise<Url | undefined> {
+    const [url] = await db.select().from(urls).where(eq(urls.id, id));
+    return url || undefined;
+  }
+
+  async createUrl(insertUrl: InsertUrl): Promise<Url> {
+    const [url] = await db
+      .insert(urls)
+      .values(insertUrl)
+      .returning();
+    return url;
+  }
+
+  async updateUrl(id: number, updateData: Partial<InsertUrl>): Promise<Url | undefined> {
+    const [url] = await db
+      .update(urls)
+      .set(updateData)
+      .where(eq(urls.id, id))
+      .returning();
+    return url || undefined;
+  }
+
+  async deleteUrl(id: number): Promise<boolean> {
+    const result = await db.delete(urls).where(eq(urls.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getSiteSettings(): Promise<SiteSettings> {
+    const [settings] = await db.select().from(siteSettings).limit(1);
+    if (!settings) {
+      // Create default settings if none exist
+      const [newSettings] = await db
+        .insert(siteSettings)
+        .values({
+          siteTitle: "NightMarket Server",
+          siteDescription: "Premium destination for exclusive modules",
+          maintenanceMode: false,
+        })
+        .returning();
+      return newSettings;
+    }
+    return settings;
+  }
+
+  async updateSiteSettings(settings: Partial<InsertSiteSettings>): Promise<SiteSettings> {
+    const existing = await this.getSiteSettings();
+    const [updated] = await db
+      .update(siteSettings)
+      .set(settings)
+      .where(eq(siteSettings.id, existing.id))
+      .returning();
+    return updated;
+  }
+
+  async getAllRentalServices(): Promise<any[]> {
+    // For now, return static data as rental services aren't stored in DB yet
+    return [];
+  }
+
+  async updateRentalService(id: string, service: any): Promise<any> {
+    // For now, just return the updated service
+    return { id, ...service };
+  }
+
+  async getAllAppleIdAccess(): Promise<AppleIdAccess[]> {
+    return await db.select().from(appleIdAccess);
+  }
+
+  async getAppleIdByKey(accessKey: string): Promise<AppleIdAccess | undefined> {
+    const [access] = await db
+      .select()
+      .from(appleIdAccess)
+      .where(eq(appleIdAccess.accessKey, accessKey));
+    return access || undefined;
+  }
+
+  async createAppleIdAccess(insertAccess: InsertAppleIdAccess): Promise<AppleIdAccess> {
+    const [access] = await db
+      .insert(appleIdAccess)
+      .values(insertAccess)
+      .returning();
+    return access;
+  }
+
+  async updateAppleIdAccess(id: number, updateData: Partial<InsertAppleIdAccess>): Promise<AppleIdAccess | undefined> {
+    const [access] = await db
+      .update(appleIdAccess)
+      .set(updateData)
+      .where(eq(appleIdAccess.id, id))
+      .returning();
+    return access || undefined;
+  }
+
+  async deleteAppleIdAccess(id: number): Promise<boolean> {
+    const result = await db.delete(appleIdAccess).where(eq(appleIdAccess.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async markAppleIdAsUsed(accessKey: string): Promise<void> {
+    await db
+      .update(appleIdAccess)
+      .set({ 
+        isUsed: true, 
+        usedAt: new Date() 
+      })
+      .where(eq(appleIdAccess.accessKey, accessKey));
+  }
+}
+
+export const storage = new DatabaseStorage();
