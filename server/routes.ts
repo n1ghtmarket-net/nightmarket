@@ -4,6 +4,28 @@ import { storage } from "./storage";
 import { insertUrlSchema, insertSiteSettingsSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // User management endpoints
+  app.post("/api/users", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      const newUser = await storage.createUser({ username, password });
+      res.status(201).json({ message: "User created successfully", user: { id: newUser.id, username: newUser.username } });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
   // Authentication endpoint
   app.post("/api/auth/login", async (req, res) => {
     try {
