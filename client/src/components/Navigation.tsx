@@ -39,6 +39,9 @@ export function Navigation({ onAdminClick }: NavigationProps) {
               <Link href="/idfree" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
                 ID Free <span className="free-badge">FREE</span>
               </Link>
+              <Link href="/ipa" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
+                IPA <span className="free-badge">FREE</span>
+              </Link>
               <a href="http://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
                 Phim Xuyên Đêm (PXD) <span className="free-badge">FREE</span>
               </a>
@@ -80,6 +83,9 @@ export function Navigation({ onAdminClick }: NavigationProps) {
             </Link>
             <Link href="/idfree" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
               ID Free <span className="free-badge">FREE</span>
+            </Link>
+            <Link href="/ipa" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
+              IPA <span className="free-badge">FREE</span>
             </Link>
             <a href="http://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
               Phim Xuyên Đêm (PXD) <span className="free-badge">FREE</span>
