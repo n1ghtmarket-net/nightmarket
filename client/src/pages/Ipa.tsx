@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download, Shield, Info, ArrowLeft, Smartphone, Clock, Package, ExternalLink } from "lucide-react";
-import ksignLogo from "@assets/IMG_1409_1751095190245.png";
 
 export default function Ipa() {
   const handleDnsInstall = () => {
@@ -118,12 +117,8 @@ export default function Ipa() {
               <div className="night-bg p-4 rounded-lg night-border border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-blue-500 flex items-center justify-center">
-                      <img 
-                        src={ksignLogo} 
-                        alt="Ksign Logo" 
-                        className="w-10 h-10 object-contain"
-                      />
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">K</span>
                     </div>
                     <div>
                       <h4 className="font-medium night-text">Ksign</h4>
