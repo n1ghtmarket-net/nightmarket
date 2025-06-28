@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download, Shield, Info, ArrowLeft, Smartphone, Clock, Package, ExternalLink } from "lucide-react";
+import ksignLogo from "@assets/IMG_1409_1751095190245.png";
 
 export default function Ipa() {
   const handleDnsInstall = () => {
@@ -10,6 +11,10 @@ export default function Ipa() {
 
   const handleMinecraftDownload = () => {
     window.open('https://drive.usercontent.google.com/download?id=1zU2OKkRmodSdE33DIwaCyuZZimKxJQF8&export=download&confirm=t&uuid=f74fd686-cc36-42b6-ae1e-6cc803482dca&at=AN8xHopZ2-Y8EPzSEm2F0wTLl1Ox%3A1751014644742', '_blank');
+  };
+
+  const handleKsignDownload = () => {
+    window.open('https://tinyurl.com/yc6pjsjf', '_blank');
   };
 
   const handleBackToHome = () => {
@@ -77,29 +82,70 @@ export default function Ipa() {
             </CardContent>
           </Card>
 
-          {/* Esign App Section */}
+          {/* Signing Apps Section */}
           <Card className="night-primary night-border">
             <CardHeader className="text-center">
               <Smartphone className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--night-accent)' }} />
-              <CardTitle className="text-2xl night-text">App Esign</CardTitle>
+              <CardTitle className="text-2xl night-text">Ứng dụng ký chứng chỉ</CardTitle>
               <p className="text-slate-400">
-                Tải xuống ứng dụng Esign để ký chứng chỉ
+                Tải xuống ứng dụng để ký và cài đặt file IPA
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button 
-                disabled
-                className="w-full bg-gray-600 text-gray-400 rounded-full text-lg py-6 cursor-not-allowed"
-              >
-                <Clock className="w-5 h-5 mr-2" />
-                Chưa có chứng chỉ
-              </Button>
+              {/* Esign App */}
+              <div className="night-bg p-4 rounded-lg night-border border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
+                      <Smartphone className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium night-text">Esign</h4>
+                      <p className="text-sm text-slate-400">Ứng dụng ký chứng chỉ phổ biến</p>
+                    </div>
+                  </div>
+                  <Button 
+                    disabled
+                    className="bg-gray-600 text-gray-400 rounded-full px-6 cursor-not-allowed"
+                  >
+                    <Clock className="w-4 h-4 mr-2" />
+                    Chưa có
+                  </Button>
+                </div>
+              </div>
+
+              {/* Ksign App */}
+              <div className="night-bg p-4 rounded-lg night-border border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-blue-500 flex items-center justify-center">
+                      <img 
+                        src={ksignLogo} 
+                        alt="Ksign Logo" 
+                        className="w-10 h-10 object-contain"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-medium night-text">Ksign</h4>
+                      <p className="text-sm text-slate-400">Ứng dụng ký chứng chỉ thay thế</p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleKsignDownload}
+                    className="night-accent rounded-full px-6"
+                    style={{ backgroundColor: 'var(--night-accent)' }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Tải xuống
+                  </Button>
+                </div>
+              </div>
               
-              <Alert className="border-orange-500/20 bg-orange-500/10">
-                <Clock className="h-4 w-4" />
-                <AlertDescription className="text-orange-400">
-                  <strong>Thông báo:</strong> Hiện tại chưa có chứng chỉ mới cho ứng dụng Esign. 
-                  Vui lòng quay lại sau hoặc liên hệ admin để được thông báo khi có cập nhật.
+              <Alert className="border-blue-500/20 bg-blue-500/10">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-blue-400">
+                  <strong>Khuyến nghị:</strong> Sử dụng Ksign để ký và cài đặt file IPA. 
+                  Esign hiện tại chưa có chứng chỉ mới.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -177,22 +223,22 @@ export default function Ipa() {
               </div>
               
               <div>
-                <h4 className="text-slate-200 font-medium mb-2">App Esign:</h4>
+                <h4 className="text-slate-200 font-medium mb-2">Ứng dụng ký chứng chỉ:</h4>
                 <div className="space-y-2 ml-4">
                   <div className="flex items-start space-x-3">
-                    <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-orange-400 text-sm font-bold">!</span>
+                    <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-blue-400 text-sm font-bold">K</span>
                     </div>
                     <p className="text-slate-300 text-sm">
-                      Hiện tại chưa có chứng chỉ mới để tải ứng dụng Esign
+                      Sử dụng Ksign để ký và cài đặt file IPA (khuyến nghị)
                     </p>
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-orange-400 text-sm font-bold">📧</span>
+                      <span className="text-orange-400 text-sm font-bold">E</span>
                     </div>
                     <p className="text-slate-300 text-sm">
-                      Liên hệ admin để được thông báo khi có chứng chỉ mới
+                      Esign hiện tại chưa có chứng chỉ mới
                     </p>
                   </div>
                 </div>
@@ -222,7 +268,7 @@ export default function Ipa() {
                       <span className="text-green-400 text-sm font-bold">3</span>
                     </div>
                     <p className="text-slate-300 text-sm">
-                      Sử dụng Esign để cài đặt file IPA vào thiết bị iOS
+                      Sử dụng Ksign hoặc Esign để cài đặt file IPA vào thiết bị iOS
                     </p>
                   </div>
                 </div>
