@@ -239,6 +239,27 @@ export default function Admin() {
     },
   });
 
+  const toggleMaintenanceMutation = useMutation({
+    mutationFn: async (maintenanceMode: boolean) => {
+      const response = await apiRequest("POST", "/api/maintenance/toggle", { maintenanceMode });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Thành công",
+        description: data.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+    },
+    onError: () => {
+      toast({
+        title: "Lỗi",
+        description: "Không thể thay đổi chế độ bảo trì",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -848,9 +869,15 @@ export default function Admin() {
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={settings.maintenanceMode}
-                        onCheckedChange={(checked) => updateSettingsMutation.mutate({ maintenanceMode: checked })}
+                        onCheckedChange={(checked) => toggleMaintenanceMutation.mutate(checked)}
+                        disabled={toggleMaintenanceMutation.isPending}
                       />
                       <Label className="night-text">Bật chế độ bảo trì</Label>
+                      {settings.maintenanceMode && (
+                        <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full border border-yellow-500/30">
+                          ĐANG BẢO TRÌ
+                        </span>
+                      )}
                     </div>
                   </div>
                 ) : (
