@@ -40,7 +40,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen night-bg">
-      <Navigation onAdminClick={() => setIsAdminOpen(true)} />
+      <Navigation />
       
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden pt-16">
