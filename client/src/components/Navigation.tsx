@@ -1,13 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Settings } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Link } from "wouter";
 
-interface NavigationProps {
-  onAdminClick: () => void;
-}
-
-export function Navigation({ onAdminClick }: NavigationProps) {
+export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -30,9 +26,7 @@ export function Navigation({ onAdminClick }: NavigationProps) {
               <Link href="/" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
                 Trang chủ
               </Link>
-              <Link href="/rental" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10">
-                Thuê dịch vụ
-              </Link>
+
               <Link href="/modules" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
                 Modules <span className="free-badge">FREE</span>
               </Link>
@@ -45,13 +39,7 @@ export function Navigation({ onAdminClick }: NavigationProps) {
               <a href="http://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="night-text hover:text-purple-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center">
                 Phim Xuyên Đêm (PXD) <span className="free-badge">FREE</span>
               </a>
-              <Button 
-                onClick={onAdminClick}
-                className="gradient-button text-white px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 border-0 shadow-lg"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Admin
-              </Button>
+
             </div>
           </div>
           
@@ -75,9 +63,7 @@ export function Navigation({ onAdminClick }: NavigationProps) {
             <Link href="/" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
               Trang chủ
             </Link>
-            <Link href="/rental" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10">
-              Thuê dịch vụ
-            </Link>
+
             <Link href="/modules" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
               Modules <span className="free-badge">FREE</span>
             </Link>
@@ -90,13 +76,7 @@ export function Navigation({ onAdminClick }: NavigationProps) {
             <a href="http://phimxuyendem.up.railway.app" target="_blank" rel="noopener noreferrer" className="block night-text hover:text-purple-400 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 hover:bg-purple-500/10 group flex items-center justify-between">
               Phim Xuyên Đêm (PXD) <span className="free-badge">FREE</span>
             </a>
-            <Button 
-              onClick={onAdminClick}
-              className="w-full gradient-button text-white px-4 py-3 rounded-xl text-base font-medium border-0 mt-4"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Admin
-            </Button>
+
           </div>
         </div>
       )}
