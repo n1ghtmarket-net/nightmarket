@@ -326,6 +326,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Maintenance mode endpoints
+  app.post("/api/maintenance/toggle", async (req, res) => {
+    try {
+      const { maintenanceMode } = req.body;
+      
+      if (typeof maintenanceMode !== 'boolean') {
+        return res.status(400).json({ message: "maintenanceMode must be a boolean" });
+      }
+      
+      const updatedSettings = await storage.updateSiteSettings({ maintenanceMode });
+      res.json({ 
+        success: true, 
+        maintenanceMode: updatedSettings.maintenanceMode,
+        message: maintenanceMode ? "Maintenance mode enabled" : "Maintenance mode disabled"
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle maintenance mode" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
