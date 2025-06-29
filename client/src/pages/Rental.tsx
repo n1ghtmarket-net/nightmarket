@@ -81,7 +81,7 @@ export default function Rental() {
 
   return (
     <>
-      <Navigation onAdminClick={() => setIsAdminOpen(true)} />
+      <Navigation />
       <div className="min-h-screen night-primary pt-20 relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 opacity-10">
