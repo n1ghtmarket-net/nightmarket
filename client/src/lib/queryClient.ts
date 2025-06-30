@@ -12,12 +12,25 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  
+  // Add auth token if available
+  const token = localStorage.getItem('admin_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  // If unauthorized, remove invalid token
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('admin_token');
+  }
 
   await throwIfResNotOk(res);
   return res;
@@ -29,12 +42,27 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const headers: Record<string, string> = {};
+    
+    // Add auth token if available
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      localStorage.removeItem('admin_token');
       return null;
+    }
+
+    // If unauthorized, remove invalid token
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('admin_token');
     }
 
     await throwIfResNotOk(res);
