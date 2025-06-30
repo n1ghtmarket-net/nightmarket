@@ -55,11 +55,24 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Check if user is already authenticated
+  // Check if user is already authenticated via JWT token
   useEffect(() => {
-    const isAuth = sessionStorage.getItem('admin_authenticated');
-    if (isAuth === 'true') {
-      setIsAuthenticated(true);
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      // Verify token is still valid by making a test API call
+      fetch('/api/admin/apple-id-access', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }).then(response => {
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('admin_token');
+        }
+      }).catch(() => {
+        localStorage.removeItem('admin_token');
+      });
     }
   }, []);
 
@@ -92,9 +105,9 @@ export default function Admin() {
       const response = await apiRequest("POST", "/api/auth/login", credentials);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setIsAuthenticated(true);
-      sessionStorage.setItem('admin_authenticated', 'true');
+      localStorage.setItem('admin_token', data.token);
       toast({ title: "Đăng nhập thành công", description: "Chào mừng đến trang quản trị" });
     },
     onError: () => {
@@ -335,8 +348,9 @@ export default function Admin() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    sessionStorage.removeItem('admin_authenticated');
+    localStorage.removeItem('admin_token');
     setLocation('/');
+    toast({ title: "Đã đăng xuất", description: "Bạn đã đăng xuất khỏi trang quản trị" });
   };
 
   if (!isAuthenticated) {
