@@ -2,51 +2,95 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUrlSchema, insertSiteSettingsSchema } from "@shared/schema";
+import { hashPassword, verifyPassword, generateToken, authenticateToken, requireAdmin, type AuthRequest } from "./auth";
+import rateLimit from "express-rate-limit";
+import { loginSchema, createUserSchema, appleIdAccessSchema, keyVerificationSchema } from "./validators";
+import { logSecurityEvent, detectSuspiciousActivity, trackFailedLogin } from "./security";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Rate limiter for user creation
+  const userCreationLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // limit each IP to 3 user creations per hour
+    message: { message: "Quá nhiều lần tạo tài khoản, vui lòng thử lại sau 1 giờ" }
+  });
+
   // User management endpoints
-  app.post("/api/users", async (req, res) => {
+  app.post("/api/users", userCreationLimiter, async (req, res) => {
     try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-      }
+      const validatedData = createUserSchema.parse(req.body);
+      const { username, password } = validatedData;
       
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+        return res.status(400).json({ message: "Tên đăng nhập đã tồn tại" });
       }
       
-      const newUser = await storage.createUser({ username, password });
-      res.status(201).json({ message: "User created successfully", user: { id: newUser.id, username: newUser.username } });
+      // Hash password before storing
+      const hashedPassword = await hashPassword(password);
+      const newUser = await storage.createUser({ username, password: hashedPassword });
+      res.status(201).json({ message: "Tạo tài khoản thành công", user: { id: newUser.id, username: newUser.username } });
     } catch (error) {
-      res.status(500).json({ message: "Failed to create user" });
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Lỗi tạo tài khoản" });
+      }
     }
   });
 
   // Authentication endpoint
   app.post("/api/auth/login", async (req, res) => {
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    
     try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+      // Check for suspicious activity
+      if (detectSuspiciousActivity(req)) {
+        logSecurityEvent('SUSPICIOUS_LOGIN_ATTEMPT', { username: req.body?.username }, req);
+        return res.status(403).json({ message: "Hoạt động đáng ngờ được phát hiện" });
       }
+      
+      // Check if IP is blocked due to too many failed attempts
+      if (trackFailedLogin(clientIp)) {
+        logSecurityEvent('IP_BLOCKED_TOO_MANY_ATTEMPTS', { ip: clientIp }, req);
+        return res.status(429).json({ message: "IP tạm thời bị chặn do quá nhiều lần đăng nhập sai" });
+      }
+      
+      const validatedData = loginSchema.parse(req.body);
+      const { username, password } = validatedData;
       
       const user = await storage.getUserByUsername(username);
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      if (!user) {
+        logSecurityEvent('LOGIN_FAILED_USER_NOT_FOUND', { username }, req);
+        return res.status(401).json({ message: "Thông tin đăng nhập không chính xác" });
       }
       
-      res.json({ message: "Login successful", user: { id: user.id, username: user.username } });
+      const isValidPassword = await verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        logSecurityEvent('LOGIN_FAILED_WRONG_PASSWORD', { username }, req);
+        return res.status(401).json({ message: "Thông tin đăng nhập không chính xác" });
+      }
+      
+      const token = generateToken({ id: user.id, username: user.username });
+      logSecurityEvent('LOGIN_SUCCESS', { username, userId: user.id }, req);
+      
+      res.json({ 
+        message: "Đăng nhập thành công", 
+        user: { id: user.id, username: user.username },
+        token: token
+      });
     } catch (error) {
-      res.status(500).json({ message: "Internal server error" });
+      logSecurityEvent('LOGIN_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, req);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Lỗi đăng nhập" });
+      }
     }
   });
 
-  // URL management endpoints
+  // URL management endpoints - Protected routes
   app.get("/api/urls", async (req, res) => {
     try {
       const urls = await storage.getAllUrls();
@@ -56,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/urls", async (req, res) => {
+  app.post("/api/urls", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertUrlSchema.parse(req.body);
       const newUrl = await storage.createUrl(validatedData);
@@ -70,9 +114,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/urls/:id", async (req, res) => {
+  app.put("/api/urls/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
       const validatedData = insertUrlSchema.partial().parse(req.body);
       
       const updatedUrl = await storage.updateUrl(id, validatedData);
@@ -90,9 +138,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/urls/:id", async (req, res) => {
+  app.delete("/api/urls/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
       const deleted = await storage.deleteUrl(id);
       
       if (!deleted) {
@@ -115,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/settings", async (req, res) => {
+  app.put("/api/settings", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertSiteSettingsSchema.partial().parse(req.body);
       const updatedSettings = await storage.updateSiteSettings(validatedData);
@@ -139,9 +191,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/rental-services/:id", async (req, res) => {
+  app.put("/api/rental-services/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const id = req.params.id;
+      if (!id) {
+        return res.status(400).json({ message: "Service ID is required" });
+      }
+      
       const updatedService = await storage.updateRentalService(id, req.body);
       res.json(updatedService);
     } catch (error) {
@@ -153,27 +209,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Apple ID Access endpoints
-  app.post("/api/apple-id/verify-key", async (req, res) => {
+  // Apple ID Access endpoints - Add rate limiting for key verification
+  const keyVerifyLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 3, // limit each IP to 3 attempts per 5 minutes
+    message: { success: false, message: "Quá nhiều lần thử key, vui lòng thử lại sau 5 phút" }
+  });
+
+  app.post("/api/apple-id/verify-key", keyVerifyLimiter, async (req, res) => {
     try {
-      const { accessKey } = req.body;
-      
-      if (!accessKey) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Key truy cập là bắt buộc" 
-        });
-      }
+      const validatedData = keyVerificationSchema.parse(req.body);
+      const { accessKey } = validatedData;
       
       const appleIdAccess = await storage.getAppleIdByKey(accessKey);
-      if (!appleIdAccess) {
+      if (!appleIdAccess || !appleIdAccess.isActive) {
         return res.status(404).json({ 
           success: false, 
           message: "Key không hợp lệ, đã được sử dụng hoặc đã hết hạn" 
         });
       }
       
-      // Mark as used (optional - for tracking)
+      // Mark as used
       await storage.markAppleIdAsUsed(accessKey);
       
       res.json({ 
@@ -185,15 +241,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      res.status(500).json({ 
-        success: false, 
-        message: "Đã xảy ra lỗi server" 
-      });
+      if (error instanceof Error) {
+        res.status(400).json({ success: false, message: error.message });
+      } else {
+        res.status(500).json({ success: false, message: "Đã xảy ra lỗi server" });
+      }
     }
   });
 
-  // Admin endpoints for managing Apple ID access
-  app.get("/api/admin/apple-id-access", async (req, res) => {
+  // Admin endpoints for managing Apple ID access - PROTECTED
+  app.get("/api/admin/apple-id-access", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const allAccess = await storage.getAllAppleIdAccess();
       res.json(allAccess);
@@ -202,13 +259,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/apple-id-access", async (req, res) => {
+  app.post("/api/admin/apple-id-access", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
-      const { accessKey, appleId, applePassword, isActive } = req.body;
-      
-      if (!accessKey || !appleId || !applePassword) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
+      const validatedData = appleIdAccessSchema.parse(req.body);
+      const { accessKey, appleId, applePassword, isActive } = validatedData;
       
       // Check if key already exists
       const existingAccess = Array.from((await storage.getAllAppleIdAccess())).find(
@@ -229,18 +283,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(newAccess);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create Apple ID access" });
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Lỗi tạo Apple ID access" });
+      }
     }
   });
 
-  // Generate random key endpoint
-  app.post("/api/admin/apple-id-access/generate-key", async (req, res) => {
+  // Generate random key endpoint - PROTECTED
+  app.post("/api/admin/apple-id-access/generate-key", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
-      const { appleId, applePassword } = req.body;
-      
-      if (!appleId || !applePassword) {
-        return res.status(400).json({ message: "Apple ID và mật khẩu là bắt buộc" });
-      }
+      const validatedData = appleIdAccessSchema.omit({ accessKey: true }).parse(req.body);
+      const { appleId, applePassword } = validatedData;
       
       // Generate random key
       const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -286,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/apple-id-access/:id", async (req, res) => {
+  app.put("/api/admin/apple-id-access/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
@@ -306,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/apple-id-access/:id", async (req, res) => {
+  app.delete("/api/admin/apple-id-access/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -326,8 +381,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Maintenance mode endpoints
-  app.post("/api/maintenance/toggle", async (req, res) => {
+  // Maintenance mode endpoints - PROTECTED
+  app.post("/api/maintenance/toggle", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const { maintenanceMode } = req.body;
       
